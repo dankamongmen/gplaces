@@ -1,0 +1,68 @@
+#!/bin/sh
+
+set -e
+set -o nounset
+
+SERV="cl"
+CURL=`which curl`
+SURI=https://www.google.com/accounts/ClientLogin
+CAPURL=http://www.google.com/accounts
+AGENT="GoogleCL GData-Python/2.0.2"
+
+usage () {
+	echo "usage: clientlogin email pw [ captcha-token captcha-text ]"
+}
+usageerr () { usage >&2 ; return 1 ; }
+
+echo "I WAS CALLED WITH $0 $*"
+
+if [ $# -eq 4 ] ; then
+	CAPDATA="logintoken=$3&logincaptcha=$4"
+elif [ $# -eq 2 ] ; then
+	CAPDATA=""
+else
+	usageerr
+fi
+
+if ! echo "$1" | grep \@ - > /dev/null 2>&1 ; then
+	usageerr
+fi
+
+OUT="`mktemp -t gplaces.XXXXXX`"
+CAP="`mktemp -t gplaces.XXXXXX`"
+
+cleanup () {
+	rm -f "$OUT" "$CAP"
+}
+
+trap cleanup EXIT
+
+"$CURL" -v -A "$AGENT" \
+ --data "accountType=HOSTED_OR_GOOGLE&Email=$1&Passwd=$2&service=$SERV&$CAPDATA" \
+ "$SURI" > "$OUT"
+
+if grep "^Error=CaptchaRequired\$" "$OUT" > /dev/null 2>&1 ; then
+	if [ $# -eq 2 ] ; then
+		echo "Provider required a CAPTCHA for service $SERV" >&2
+		URL=`grep "^Url=" "$OUT" | cut -d= -f2-`
+		CAPURL=$CAPURL/`grep "^CaptchaUrl=" "$OUT" | cut -d= -f2-`
+		CAPTOK=`grep "^CaptchaToken=" "$OUT" | cut -d= -f2-`
+		wget $CAPURL -O "$CAP"
+		display "$CAP" &
+		echo -n "CAPTCHA solution text? "
+		read CAPTEXT
+		"$0" $* "$CAPTOK" "$CAPTEXT"
+	else
+		echo "CAPTCHA or auth were incorrect" >&2
+		exit 1
+	fi
+elif grep "^Error=Unknown\$" "$OUT" > /dev/null 2>&1 ; then
+	echo "Service unknown to provider: $SERV" >&2
+	exit 1
+elif grep "^Error=" "$OUT" 2>1 ; then # display the error line
+	echo "Provider returned an unknown error" >&2
+	exit 1
+else
+	echo "worked?"
+fi
+cat "$OUT"
