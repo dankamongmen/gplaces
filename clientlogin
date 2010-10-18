@@ -59,10 +59,16 @@ if grep "^Error=CaptchaRequired\$" "$OUT" > /dev/null 2>&1 ; then
 elif grep "^Error=Unknown\$" "$OUT" > /dev/null 2>&1 ; then
 	echo "Service unknown to provider: $SERV" >&2
 	exit 1
-elif grep "^Error=" "$OUT" 2>1 ; then # display the error line
+elif grep "^Error=" "$OUT" 1>&2 ; then # display the error line
 	echo "Provider returned an unknown error" >&2
 	exit 1
+elif grep "^Auth=" "$OUT" > /dev/null 2>&1 ; then
+	AUTH=`grep "^Auth=" "$OUT" | cut -d= -f2-`
+	SID=`grep "^SID=" "$OUT" | cut -d= -f2-`
+	LSID=`grep "^LSID=" "$OUT" | cut -d= -f2-`
+	echo "Successfully logged in $1"
 else
-	echo "worked?"
+	echo "Provider returned a malformed response" >&2
+	cat "$OUT" >&2
+	exit 1
 fi
-cat "$OUT"
