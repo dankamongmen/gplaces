@@ -14,8 +14,6 @@ usage () {
 }
 usageerr () { usage >&2 ; return 1 ; }
 
-echo "I WAS CALLED WITH $0 $*"
-
 if [ $# -eq 4 ] ; then
 	CAPDATA="logintoken=$3&logincaptcha=$4"
 elif [ $# -eq 2 ] ; then
