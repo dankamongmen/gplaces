@@ -3,9 +3,10 @@
 set -e
 set -o nounset
 
-SERV="cl"
+SERV="lbc"
 CURL=`which curl`
 SURI=https://www.google.com/accounts/ClientLogin
+#SURI=https://www.google.com/accounts/ServiceLogin
 CAPURL=http://www.google.com/accounts
 AGENT="GoogleCL GData-Python/2.0.2"
 
@@ -23,6 +24,7 @@ else
 fi
 
 if ! echo "$1" | grep \@ - > /dev/null 2>&1 ; then
+	echo "Invalid account name: $1" >&2
 	usageerr
 fi
 
@@ -35,7 +37,7 @@ cleanup () {
 
 trap cleanup EXIT
 
-"$CURL" -v -A "$AGENT" \
+"$CURL" --cookie-jar cookie.jar -v -A "$AGENT" \
  --data "accountType=HOSTED_OR_GOOGLE&Email=$1&Passwd=$2&service=$SERV&$CAPDATA" \
  "$SURI" > "$OUT"
 
@@ -65,6 +67,7 @@ elif grep "^Auth=" "$OUT" > /dev/null 2>&1 ; then
 	SID=`grep "^SID=" "$OUT" | cut -d= -f2-`
 	LSID=`grep "^LSID=" "$OUT" | cut -d= -f2-`
 	echo "Successfully logged in $1"
+	echo "Authorization: GoogleLogin auth=$AUTH"
 else
 	echo "Provider returned a malformed response" >&2
 	cat "$OUT" >&2

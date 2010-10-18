@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -e
+set -o nounset
+
+usage () { echo "usage: `basename $0` username password filename" ; return 0 ; }
+usageerr () { usage >&2 ; return 1 ; }
+
+[ $# -eq 3 ] || usageerr
+
+AUTH="`./clientlogin "$1" "$2" | grep ^Authorization:`"
+AGENT="GoogleCL GData-Python/2.0.2"
+
+# FIXME need to get a cookie dynamically
+curl --cookie-jar cookie.jar \
+	-F "security_token=`echo $AUTH | cut -d\  -f2-`" \
+	-F "hl=en_US" \
+	-F "gl=US" \
+	-F "attempts=1" \
+	-F "fileType=local" \
+	-F "filename=@$3" \
+	-H "$AUTH" -A "$AGENT" -v -L \
+	--cookie "__utma=173272373.1874989498.1287417633.1287417633.1287420797.2; __utmz=173272373.1287417633.1.1.utmcsr=google.com|utmccn=(referral)|utmcmd=referral|utmcct=/support/places/bin/static.py; __utmc=173272373; __utmb=173272373.3.10.1287420797; lbc2=DQAAAGABAAB7SQMqQt-BfuBqS_l93U0NE-cfg949MjzOzWr1Tv_LUphi-CkrWS0jDOK0JQnKDKIesXN1eVLvhhrhpc442aJB0sTaydhI0JymAwphDQ0lAk2aCaQi0hUxH0ZmpQuSiNfKOMXtpE57xHFmw9ErZktLdqXGG3pnhj8sFo9wz8OyjXldOGAdgjz686JBHGKqCiGQH8QkPYDu58nt1gA63gyk48BRkh_u8tbO7tOM5NTvRI4KAJw3bsteV2JSfOPTO9KMZ-gzJtPBfM2YlS941EikGPV0svTtwQqopAX-pL4xUownKJ5ts60BV0csua54QnfAuDDNcjZr1y7j0_POPn9vxQxU8NJR9cKI4LIluKJtb_o9Kl8uP-ngo1lSw8N74SHUYUuEgZDgPDgOHX-dlWmRcFeZwTGOiwtBBmRh2PfCTKMuUcrz0vpafdoukKV1FzF8hX9sbCj6GcxOyTeYL4YE; locale=en_US; PREF=ID=1bef5b86944a5951:U=a597e461a90d1f0e:FF=4:LD=en:NR=10:TM=1284091804:LM=1287420851:DV=8WDcP-N8LasL:GM=1:SG=2:S=5SKU4_Gs8h7z8sOb; NID=39=OfLgF1LBemo7RSbvomCkEJEognLOEAMGI12pj_h6LD0jVepaBQVU__6eHRK8TyV0rfOuXRaRlS9ww34gguaNoXcvBk21YqEz_KAlDCdAqQFFmATo_1t5U1kkM-sTsRwG; sidebar_hide_contacts=0; rememberme=true; HSID=AtP4BBhSEepvw7XXL; SID=DQAAAFwBAADmF3MD7E5Y064D0DH4luJ7xuXvqOGKaSZe_SCua47zIt1qygB8T2wC7mUu6j5Ro3mivEi4yAQie-5xyJAKQY60DxJRUnPPNdbPRRw268lfen_wMB8pExTyEbMLcTu3ToiEAovnGJRHpPle1FxzfWGo514zTmGdpcp5Swuywdqt3V4FhtNK7acYhrZQSpHvMfdvuwbg-h7SZqacbz730Pil5Q_yVVuYC5-rBKHnFKatQ0pYgoPEjlCQSUsHsPeg75nVZcvtCJFmShwAf4FqzrKDt_2w4umjpG2FIQUfsqWpCoJ6klRb30r6TV0kw2FBff_n5g3MS7cptc9Hc8YZkXP3TawSdHILL191W2UcdYdmI9lRIxI8csL55K_NKP39tP3oVLhvyGWFeLEzBpdFaFvTCbYGkHvAEQbGeiN3hZMt-3zSx0QaTrptd2-5NTSEzcLsYM2fBf-IxkoxJr1pI_gi; S=localbusinesscenter=Q2APSLNk1Z8" \
+	http://www.google.com/local/add/uploadFeed?attempts=1 > erp
+#	--post302 \
